@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	// internal
 	"github.com/brutalgg/watchdog/pkg/banner"
+	"github.com/brutalgg/watchdog/pkg/watchdog"
 )
 
 var rootCmd = &cobra.Command{
@@ -17,9 +18,10 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "info", "Include verbose messages from program execution [error, warn, info, debug]")
-	rootCmd.PersistentFlags().StringP("monitor", "m", "/Library/Group Containers/K36BKF7T3D.group.com.apple.configurator/Library/Caches/", "Folder to monitor for cached IPA files")
+	rootCmd.PersistentFlags().StringP("monitor", "m", "/Library/Group Containers/K36BKF7T3D.group.com.apple.configurator/Library/Caches/", "Location to monitor for cached IPA files")
+	rootCmd.PersistentFlags().IntP("delay", "d", 2000, "Time in milliseconds for polling the filesystem")
 	rootCmd.PersistentFlags().BoolP("banner", "q", false, "Disables banner")
-	rootCmd.PersistentFlags().StringP("out", "o", "/tmp/ipawatchdog", "Location to dump detected IPA files")
+	rootCmd.PersistentFlags().StringP("out", "o", "/Desktop/watchdog", "Location in the user's home directory for dumping files")
 }
 
 func Execute() {
@@ -49,4 +51,11 @@ func preChecks(cmd *cobra.Command, args []string) {
 }
 
 func run(cmd *cobra.Command, args []string) {
+	m, _ := cmd.Flags().GetString("monitor")
+	o, _ := cmd.Flags().GetString("out")
+	d, _ := cmd.Flags().GetInt("delay")
+
+	cli.Infoln("Initalizing watchdog instance")
+	dog := watchdog.New(m, o, d)
+	dog.Watch()
 }
