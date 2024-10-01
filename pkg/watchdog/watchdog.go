@@ -1,14 +1,13 @@
 package watchdog
 
 import (
-	// "os"
-	// "io"
+	"os"
 	"fmt"
-	"io/fs"
 	"os/user"
 	"path/filepath"
+	"errors"
 	"time"
-	// "strings"
+	"strings"
 
 	// 3rd Party
 	"github.com/brutalgg/cli"
@@ -42,7 +41,15 @@ func New(monitorfolder string, outputfolder string, pollrate int) *watcher {
 	}
 }
 
-func (w watcher) Watch() {
+func (w watcher) Watch() error {
+	exists, err := checkDir(w.MonitorFolder)
+	if err != nil {
+		return err
+	}
+	if !exists{
+		return errors.New("CRITICAL: Monitor folder not found")
+	}
+
 	cli.Infoln("Press CTRL+C to exit the program")
 
 	for {
@@ -51,8 +58,22 @@ func (w watcher) Watch() {
 		}
 		time.Sleep(w.PollRate)
 	}
+	return nil
 }
 
-func (w watcher) grab(path string, d fs.DirEntry, err error) error {
-	return nil
+func (w watcher) grab(path string, d os.DirEntry, err error) error {
+		return nil
+}
+
+func checkDir(dir string) (bool, error) {
+	info, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		// Directory does not exist
+		return false, nil
+	}
+	if err != nil {
+		// Some other error occurred
+		return false, err
+	}
+	return info.IsDir(), nil // Return true if it's a directory
 }

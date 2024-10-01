@@ -57,5 +57,9 @@ func run(cmd *cobra.Command, args []string) {
 
 	cli.Infoln("Initalizing watchdog instance")
 	dog := watchdog.New(m, o, d)
-	dog.Watch()
+	err := dog.Watch()
+	if err != nil {
+		cli.Errorln(err)
+	}
+	cli.Infoln("Exiting...")
 }
