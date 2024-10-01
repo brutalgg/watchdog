@@ -2,10 +2,10 @@ package watchdog
 
 import (
 	"os"
+	"io"
 	"fmt"
 	"os/user"
 	"path/filepath"
-	"errors"
 	"time"
 	"strings"
 
@@ -22,16 +22,16 @@ type watcher struct {
 
 func New(monitorfolder string, outputfolder string, pollrate int) *watcher {
 	u, _ := user.Current()
-	cli.Debug("Detected username: %v", u.Username)
+	cli.Debug("Automatically detected username: %v", u.Username)
 
 	p := time.Duration(pollrate) * time.Millisecond
-	cli.Debug("Polling Rate set to %v", p)
+	cli.Info("Polling Rate set to %v", p)
 
 	w := filepath.Join("/Users", u.Username, monitorfolder)
-	cli.Debug("Using watch directory: %v", w)
+	cli.Info("Watching directory: %v", w)
 
 	o := filepath.Join("/Users", u.Username, outputfolder)
-	cli.Debug("Output captured IPAs to the folder: %v", o)
+	cli.Info("Outputting IPAs to: %v", o)
 
 	return &watcher{
 		MonitorFolder: w,
@@ -47,14 +47,19 @@ func (w watcher) Watch() error {
 		return err
 	}
 	if !exists{
-		return errors.New("CRITICAL: Monitor folder not found")
+		return fmt.Errorf("CRITICAL: Monitor folder not found")
+	}
+
+	err = ensureDir(w.OutputFolder)
+	if err !=nil{
+		return err
 	}
 
 	cli.Infoln("Press CTRL+C to exit the program")
 
 	for {
 		if err := filepath.WalkDir(w.MonitorFolder, w.grab); err != nil {
-			cli.Error("%s", err)
+			cli.Errorln(err)
 		}
 		time.Sleep(w.PollRate)
 	}
@@ -62,7 +67,7 @@ func (w watcher) Watch() error {
 }
 
 func (w watcher) grab(path string, d os.DirEntry, err error) error {
-		return nil
+	return nil
 }
 
 func checkDir(dir string) (bool, error) {
@@ -76,4 +81,16 @@ func checkDir(dir string) (bool, error) {
 		return false, err
 	}
 	return info.IsDir(), nil // Return true if it's a directory
+}
+
+func ensureDir(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		cli.Debugln("Output directory not found. Trying to create...")
+		err = os.MkdirAll(dir, os.ModePerm) // Use os.ModePerm for default permissions
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+		cli.Debugln("Output directory successfully created")
+	}
+	return nil
 }
