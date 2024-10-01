@@ -4,6 +4,7 @@ import (
 	// 3rd party
 	"github.com/brutalgg/cli"
 	"github.com/spf13/cobra"
+
 	// internal
 	"github.com/brutalgg/watchdog/pkg/banner"
 	"github.com/brutalgg/watchdog/pkg/watchdog"
@@ -55,7 +56,7 @@ func run(cmd *cobra.Command, args []string) {
 	o, _ := cmd.Flags().GetString("out")
 	d, _ := cmd.Flags().GetInt("delay")
 
-	cli.Infoln("Initalizing watchdog instance")
+	cli.Infoln("Initalizing watchdog")
 	dog := watchdog.New(m, o, d)
 	err := dog.Watch()
 	if err != nil {

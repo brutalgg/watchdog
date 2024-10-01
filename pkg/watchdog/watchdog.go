@@ -1,13 +1,13 @@
 package watchdog
 
 import (
-	"os"
-	"io"
 	"fmt"
+	"io"
+	"os"
 	"os/user"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 
 	// 3rd Party
 	"github.com/brutalgg/cli"
@@ -46,12 +46,12 @@ func (w watcher) Watch() error {
 	if err != nil {
 		return err
 	}
-	if !exists{
+	if !exists {
 		return fmt.Errorf("CRITICAL: Monitor folder not found")
 	}
 
 	err = ensureDir(w.OutputFolder)
-	if err !=nil{
+	if err != nil {
 		return err
 	}
 
@@ -67,6 +67,33 @@ func (w watcher) Watch() error {
 }
 
 func (w watcher) grab(path string, d os.DirEntry, err error) error {
+	ext := strings.TrimSpace(path)
+	if filepath.Ext(ext) == ".ipa" {
+		outFile := filepath.Join(w.OutputFolder, filepath.Base(ext))
+		if _, err := os.Stat(outFile); !os.IsNotExist(err) {
+			// the destination already exists
+			return nil
+		}
+		cli.Infoln("Found new IPA. Copying...")
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+
+		out, err := os.Create(outFile)
+		if err != nil {
+			return err
+		}
+		defer out.Close()
+
+		_, err = io.Copy(out, in)
+		if err != nil {
+			return err
+		}
+		cli.Info("Successfully copied IPA: %s", filepath.Base(strings.TrimSpace(path)))
+		return out.Close()
+	}
 	return nil
 }
 
